@@ -40,7 +40,7 @@ if (!isset($error) && isset($_POST['REPORT']) && $_POST['REPORT'] == "DonorRepor
   $reportParams['StartDate']= $year."-".$month."-01";
   $reportParams['EndDate'] = $year."-".$month."-".$lastday;
   $reportParams['ProjectCode'] = $_POST['DESGCODE'];
-  $reportParams['ExecuteAsUser'] = "archiek"; // $user_id; //todo
+  $reportParams['ExecuteAsUser'] = $user_id;
 
   //Check for returned error message
   $errorMsg = produceRSReport('/Donors/MonthlyDonationReport', $_POST['OutputFormat'], $reportParams);
@@ -187,7 +187,7 @@ get_header(); ?>
 				} else {
 					echo "http://";
 				}
-				echo $_SERVER['SERVER_NAME'].":81".$_SERVER['REQUEST_URI']; //todo
+				echo $_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI']; 
 			?>">
 			<P>Choose Your Report:<BR>
 			<SELECT ID="repchoice" NAME="REPORT" onChange="showHelpButton(this.selectedIndex == 4);">
