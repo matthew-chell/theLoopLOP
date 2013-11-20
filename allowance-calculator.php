@@ -419,7 +419,8 @@ include('functions/js_functions.php');
 				if ($value == "Null" || explode(":", $value) == "userIs"){
 					continue;
 				}
-				$quest_id = explode("-", explode(":",$value)[0])[1];
+				$part = explode(":",$value)[0];
+				$quest_id = explode("-",  $part)[1];
 				$sql = "SELECT `type` , `pull_data`, `role` FROM `allowance_question` WHERE `id` =".$quest_id;
 				$results = $wpdb->get_results($sql);
 				if ($results[0]->pull_data or ((intval($results[0]->role)) & (1 << intval(getRole($id)))) == 0){

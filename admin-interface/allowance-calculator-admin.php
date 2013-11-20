@@ -422,7 +422,8 @@ function remove_question($quest_id){
 			if ($value == "Null" || explode(":", $value) == "userIsYou"){
 				continue;
 			}
-			if ($quest_id == explode("-", explode(":",$value)[0])[1]){
+			$part = explode(":",$value)[0];
+			if ($quest_id == explode("-", $part)[1]){
 				continue;
 			}
 			$data .= $value.",";
@@ -563,7 +564,8 @@ function remove_answer($quest_id, $answer_id){
 			if ($value == "Null" || explode(":", $value) == "userIsYou"){
 				continue;
 			}
-			if ($quest_id == explode("-", explode(":",$value)[0])[1] and $answer_id == explode(":", $value)){
+			$part = explode(":",$value)[0];
+			if ($quest_id == explode("-", $part)[1] and $answer_id == explode(":", $value)){
 				continue;
 			}
 			$data .= $value.",";
@@ -909,7 +911,8 @@ function clean_tree(){
 			if ($value == "Null" || explode(":", $value) == "userIsYou"){
 				continue;
 			}
-			$quest_id = explode("-", explode(":",$value)[0])[1];
+			$part = explode(":",$value)[0];
+			$quest_id = explode("-", $part)[1];
 			$sql = "SELECT `type` FROM `allowance_question` WHERE `id` =".$q_key[intval($quest_id)];
 			$results = $wpdb->get_results($sql);
 			switch ($results[0]->type){
