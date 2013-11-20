@@ -148,7 +148,8 @@ include('functions/js_functions.php'); ?>
 			if ($prov == 13){
 				return 'Foreign';
 			} 
-			return array_keys($support_constant['provinces'])[$prov]; //todo will work?
+			$part = array_keys($support_constant['provinces']);
+			return $part[$prov]; 
 		}
 		
 		
