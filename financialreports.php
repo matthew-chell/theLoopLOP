@@ -7,6 +7,17 @@
 *
 */
 
+/*
+to an another report you need to:
+
+	> add another elif block at "%elif-block"
+	> if it does not use staff account then add the report to the list at "%list"
+	> add the report to the dropdown with the id of "repchoice"
+	> add to the repchoice change function to display the right option
+	> add new option if necessary
+	> modify check form if necessary
+*/
+
 $current_user = wp_get_current_user();
 $user_id = $current_user->user_login;
 
@@ -20,7 +31,7 @@ unset($error);
 if (isset($_POST['REPORT']) 
 	&& (($_POST['REPORT'] == "AccountBalance" && strlen($_POST['DESGCODE']) < 6)
 	||  ($_POST['REPORT'] != "AccountBalance" && strlen($_POST['DESGCODE']) != 6))
-	&& $_POST['REPORT'] != "StaffList")
+	&& !in_array($_POST['REPORT'] , array ("StaffList", "StaffVacation"))) //%list  (just a label)
 	{
 	$error = "Your account number must be 6 digits in length\n";
 } 
@@ -144,6 +155,8 @@ elseif (!isset($error) && isset($_POST['REPORT']) && $_POST['REPORT'] == "StaffL
   require('financialreports/rs_functions.php');
 
   $reportParams['ExecuteAsUser'] = $user_id;
+  $reportParams['ReportToMeOnly'] = (isset($_POST['reportToMe']) ? 'true' : 'false');
+  $reportParams['ShowFinancials'] = (isset($_POST['financials']) ? 'true' : 'false');
 
   //Check for returned error message 
   $errorMsg = produceRSReport('/General/Staff List', $_POST['OutputFormat'], $reportParams, true, $SERVER_SQL2012);
@@ -152,6 +165,25 @@ elseif (!isset($error) && isset($_POST['REPORT']) && $_POST['REPORT'] == "StaffL
   }
   $error = $errorMsg;
 }
+
+elseif (!isset($error) && isset($_POST['REPORT']) && $_POST['REPORT'] == "StaffVacation") {
+  require('financialreports/rs_functions.php');
+
+  $reportParams['ExecuteAsUser'] = $user_id;
+  $reportParams['ReportToMeOnly'] = (isset($_POST['reportToMe']) ? 'true' : 'false');
+  $reportParams['Year'] = $_POST['vac_year'];
+  $reportParams['Category'] = '3';
+
+  //Check for returned error message 
+  $errorMsg = produceRSReport('/General/Staff Vacation and Wellness', $_POST['OutputFormat'], $reportParams, true, $SERVER_SQL2012);
+  if(!isset($errorMsg)){
+	exit;
+  }
+  $error = $errorMsg;
+}
+
+//%elif-block (just a label)
+
 //If there is an error with a preview, do not display the whole page
 if(isset($_POST['previewBtn']) && isset($error)){
 ?>
@@ -170,6 +202,9 @@ $RPTSTARTYEAR = $_POST["RPTSTARTYEAR"] ? $_POST["RPTSTARTYEAR"] : date("Y");
 $RPTENDMONTH = $_POST["RPTENDMONTH"] ? $_POST["RPTENDMONTH"] : date("m");
 $RPTENDYEAR = $_POST["RPTENDYEAR"] ? $_POST["RPTENDYEAR"] : date("Y");
 $RPTPERIOD = $_POST["RPTPERIOD"] ? $_POST["RPTPERIOD"] : 'MONTH';
+$reportToMe = $_POST['reportToMe'];
+$financials = $_POST['financials'];
+$vac_year = $_POST['vac_year'];
 $OUTPUTFRMT = $_POST['OutputFormat'];
 
 get_header(); ?>
@@ -187,7 +222,7 @@ get_header(); ?>
 				} else {
 					echo "http://";
 				}
-				echo $_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI']; 
+				echo $_SERVER['SERVER_NAME'].":".$_SERVER['SERVER_PORT'].$_SERVER['REQUEST_URI'];
 			?>">
 			<P>Choose Your Report:<BR>
 			<SELECT ID="repchoice" NAME="REPORT" onChange="showHelpButton(this.selectedIndex == 4);">
@@ -200,6 +235,7 @@ get_header(); ?>
                   <OPTION VALUE="AccountBalance" <?php if($REPORT == 'AccountBalance'){echo("selected");}?>>Account Balance</OPTION>
 				  <OPTION VALUE="AccountDonors" <?php if($REPORT == 'AccountDonors'){echo("selected");}?>>Account Donors</OPTION>
 				  <OPTION VALUE="StaffList" <?php if($REPORT == 'StaffList'){echo("selected");}?>>Staff List</OPTION>
+				  <OPTION VALUE="StaffVacation" <?php if($REPORT == 'StaffVacation'){echo("selected");}?>>Staff Vacation and Wellness</OPTION>
             </SELECT>
 			<BUTTON TYPE="button" ID="dieHelpButton" style="display:none" onClick="window.open('/reports/detailed-income-and-expense-help/')")>Help on this report</BUTTON>
 			</P>
@@ -305,7 +341,26 @@ get_header(); ?>
 						 ?>
 				</SELECT>
 				</P>
-			</DIV>			
+			</DIV>
+			<div id='reportToMe_opt' style='display:none'><input type='checkbox' id='reportToMe' name='reportToMe' checked ><label for='reportToMe'>Report To Me Only</label></div><BR>
+			<div id='financials_opt' style='display:none'><input type='checkbox' id='financials' name='financials'><label for='financials'>Show Financials</label></div>
+			<div id='staffVaction_options'  style='display:none'>
+				YEAR:
+				<SELECT NAME="vac_year">
+					  <OPTION VALUE="">--Year--</OPTION>
+					  <?php $CurrYear = date("Y");
+					     $x = 0;
+						 WHILE ($x < 3){
+						 ?>
+						 <OPTION VALUE='<?php echo $CurrYear-$x;?>' 
+								     <?php if($RPTYEAR == $CurrYear-$x){echo("selected");}?>>
+									 <?php echo $CurrYear-$x;?></OPTION>
+						 <?php
+						 $x++;
+						 }
+						 ?>				  										  								 	 <?php echo (date("Y") -4);?></OPTION>
+				</SELECT>		
+			</div>
 			<DIV ID="output" STYLE="display:none">
 				<P>
 				Output Format:
@@ -354,7 +409,7 @@ get_header(); ?>
 				$("#preview").slideDown();
 				*/
 			}
-			if(!form.DESGCODE.value && $("#repchoice").val() != "StaffList"){
+			if(!form.DESGCODE.value && $("#repchoice").val() != "StaffList"  && $("#repchoice").val() != "StaffVacation"){
 				alert("Please enter your ministry/staff account number, then click Run Report");
 				return false;
 			}
@@ -370,48 +425,80 @@ get_header(); ?>
 					$("#monthyear").slideDown();
 					$("#output").slideDown();
 					$("#daterange").slideUp();
+					$("#reportToMe_opt").slideUp();
+					$("#financials_opt").slideUp();
+					$("#staffVaction_options").slideUp();
 					$("#DESGCODE").removeAttr("title");
 				} else if($(this).val() == "InvestorReport"){
 					$("#staffaccount").slideDown();
 					$("#monthyear").slideDown();
 					$("#output").slideDown();
 					$("#daterange").slideUp();
+					$("#reportToMe_opt").slideUp();
+					$("#financials_opt").slideUp();
+					$("#staffVaction_options").slideUp();
 					$("#DESGCODE").removeAttr("title");
 				} else if($(this).val() == "MonthlyDonors"){
 					$("#staffaccount").slideDown();
 					$("#monthyear").slideUp();
 					$("#output").slideDown();
 					$("#daterange").slideUp();
+					$("#reportToMe_opt").slideUp();
+					$("#financials_opt").slideUp();
+					$("#staffVaction_options").slideUp();
 					$("#DESGCODE").removeAttr("title");
 				} else if($(this).val() == "DetailedRangeReport"){
 					$("#staffaccount").slideDown();
 					$("#monthyear").slideUp();
 					$("#output").slideDown();
 					$("#daterange").slideDown();
+					$("#reportToMe_opt").slideUp();
+					$("#financials_opt").slideUp();
+					$("#staffVaction_options").slideUp();
 					$("#DESGCODE").removeAttr("title");
 				} else if($(this).val() == "SummaryReport"){
 					$("#staffaccount").slideDown();
 					$("#monthyear").slideUp();
 					$("#output").slideDown();
 					$("#daterange").slideDown();
+					$("#reportToMe_opt").slideUp();
+					$("#financials_opt").slideUp();
+					$("#staffVaction_options").slideUp();
 					$("#DESGCODE").removeAttr("title");
 				} else if($(this).val() == "AccountBalance"){
 					$("#staffaccount").slideDown();
 					$("#monthyear").slideUp();
 					$("#output").slideUp();
-					$("#daterange").slideUp();				
+					$("#daterange").slideUp();
+					$("#reportToMe_opt").slideUp();
+					$("#financials_opt").slideUp();
+					$("#staffVaction_options").slideUp();
 					$("#DESGCODE").attr("title",'Indicate multiple accounts by separating them using commas');
 				} else if($(this).val() == "AccountDonors"){
 					$("#staffaccount").slideDown();
 					$("#monthyear").slideUp();
 					$("#output").slideDown();
 					$("#daterange").slideDown();				
+					$("#reportToMe_opt").slideUp();
+					$("#financials_opt").slideUp();
+					$("#staffVaction_options").slideUp();
 					$("#DESGCODE").removeAttr("title");
 				} else if($(this).val() == "StaffList"){
 					$("#staffaccount").slideUp();
 					$("#monthyear").slideUp();
 					$("#output").slideDown();
-					$("#daterange").slideUp();				
+					$("#daterange").slideUp();
+					$("#reportToMe_opt").slideDown();
+					$("#financials_opt").slideDown();
+					$("#staffVaction_options").slideUp();
+				}  else if($(this).val() == "StaffVacation"){
+					$("#staffaccount").slideUp();
+					$("#monthyear").slideUp();
+					$("#output").slideDown();
+					$("#daterange").slideUp();
+					$("#financials_opt").slideUp();
+					$("#reportToMe_opt").slideDown();
+					$("#staffVaction_options").slideDown();
 				}
 				
 				/* Buttons */
