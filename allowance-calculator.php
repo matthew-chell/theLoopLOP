@@ -377,8 +377,11 @@ include('functions/js_functions.php');
 			$isField = intVal(getFieldEmployee("is_field_staff", $id));
 			$level = intVal(getFieldEmployee("compensation_level", $id));
 			
+			
+			//levels 1 - 5 = individual
+			//levels 6 - 10 = leader
 			if ($isField == 1){
-				if ($level < 7){
+				if ($level < 6){
 					return $allowance_constant['fieldIndividual'];
 				}
 				else{
@@ -386,7 +389,7 @@ include('functions/js_functions.php');
 				}
 			}
 			else {
-				if ($level < 7){
+				if ($level < 6){
 					return $allowance_constant['corporateIndividual'];
 				}
 				else {
@@ -422,7 +425,7 @@ include('functions/js_functions.php');
 			
 			switch(getRole($id)){
 			case $allowance_constant['fieldIndividual']:
-				//levels 3-6 are mapped to the the four answers respectively (levels 1, 2 will not be using this.  if they do result is undefined.)
+				//levels 3-5 are mapped to the the three answers respectively (levels 1, 2 will not be using this.  if they do, result is undefined.)
 				$q = 11;
 				
 				$sql = "SELECT `first_sub` FROM `allowance_question` WHERE allowance_question.id=".$q;
@@ -431,10 +434,11 @@ include('functions/js_functions.php');
 				echo "document.getElementById('form-".$q."-".($offset + $level)."').check = true;\n";
 				break;
 			case $allowance_constant['fieldLeader']:
-				echo "document.getElementById('extra-field-".min($level,9)."').checked = true;\n";
+				//at and above level 8 is the same catergory
+				echo "document.getElementById('extra-field-".min($level,8)."').checked = true;\n";
 				break;
 			case $allowance_constant['corporateIndividual']:
-				//levels 1-6 are mapped to the six answers
+				//levels 1-5 are mapped to the five answers
 				$q = 12;
 				$sql = "SELECT `first_sub` FROM `allowance_question` WHERE allowance_question.id=".$q;
 				$result = $wpdb->get_results($sql);
@@ -442,7 +446,8 @@ include('functions/js_functions.php');
 				echo "document.getElementById('form-".$q."-".($offset + $level)."').check = true;\n";
 				break;
 			case $allowance_constant['corporateLeader']:
-				echo "document.getElementById('extra-corp-".min($level,8)."').checked = true;\n";
+				//at and above level 7 is the same catergory
+				echo "document.getElementById('extra-corp-".min($level,7)."').checked = true;\n";
 				break;
 			}
 			//** END HARDCODED **//
